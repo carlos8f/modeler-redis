@@ -1,0 +1,1 @@
+require('modeler/test/basic');
