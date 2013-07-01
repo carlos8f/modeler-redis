@@ -7,15 +7,11 @@ module.exports = function (_opts) {
   if (!api.options.client) throw new Error('must pass a node_redis client with options.client');
   var client = api.options.client;
   var prefix = api.options.prefix + api.options.name + ':';
-  api.options.scoreFn || (api.options.scoreFn = function (entity) {
-    return entity.created.getTime();
-  });
 
-  api._list = function (options, cb) {
-    var method = options.reverse ? 'ZREVRANGE' : 'ZRANGE';
-    var start = options.start || 0;
-    var stop = typeof options.stop === 'undefined' ? -1 : options.stop - 1;
-    client[method](prefix, start, stop, cb);
+  api._tail = function (limit, cb) {
+    if (!limit) limit = -1;
+    else limit--;
+    client.ZREVRANGE(prefix, 0, limit, cb);
   };
   api._save = function (entity, cb) {
     try {
@@ -25,13 +21,17 @@ module.exports = function (_opts) {
     catch (e) {
       return cb(e);
     }
-    client.MULTI()
-      .SET(prefix + entity.id, data)
-      .ZADD(prefix, api.options.scoreFn(entity), entity.id)
-      .EXEC(function (err) {
+
+    if (entity.rev > 1) client.SET(prefix + entity.id, data, cb);
+    else {
+      client.INCR(prefix + '_idx', function (err, idx) {
         if (err) return cb(err);
-        cb();
+        client.MULTI()
+          .SET(prefix + entity.id, data)
+          .ZADD(prefix, idx, entity.id)
+          .EXEC(cb);
       });
+    }
   };
   api._load = function (id, cb) {
     client.GET(prefix + id, function (err, data) {
