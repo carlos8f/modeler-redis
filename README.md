@@ -5,6 +5,24 @@ redis-powered functional entity system
 
 [![build status](https://secure.travis-ci.org/carlos8f/modeler-redis.png)](http://travis-ci.org/carlos8f/modeler-redis)
 
+### Usage
+
+Use `modeler-redis` just like `modeler`, but pass it a redis client:
+
+```js
+var modeler = require('modeler-redis')
+  , client = require('redis').createClient()
+
+// create a collection
+var apples = modeler({
+  client: client, // must pass a node_redis client here
+  name: 'apples', // keys will be prefixed by the collection name
+  prefix: 'my_app' // optional root prefix for keys
+});
+```
+
+See [modeler](https://github.com/carlos8f/modeler) for the full API.
+
 - - -
 
 ### Developed by [Terra Eclipse](http://www.terraeclipse.com)
