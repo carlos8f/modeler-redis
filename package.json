@@ -5,7 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "hydration": "~0.5.0",
-    "modeler": "~0.2.0"
+    "modeler": "~0.4.1"
   },
   "devDependencies": {
     "mocha": "*",

@@ -8,10 +8,22 @@ module.exports = function (_opts) {
   var client = api.options.client;
   var prefix = api.options.prefix + api.options.name + ':';
 
-  api._tail = function (limit, cb) {
-    if (!limit) limit = -1;
-    else limit--;
-    client.ZREVRANGE(prefix, 0, limit, cb);
+  function continuable (offset, limit, reverse, cb) {
+    var stop = limit ? offset + limit - 1 : -1;
+    (function next () {
+      client[reverse ? 'ZREVRANGE' : 'ZRANGE'](prefix, offset, limit ? offset + limit - 1 : -1, function (err, chunk) {
+        if (err) return cb(err);
+        offset += chunk.length;
+        cb(null, chunk, next);
+      });
+    })();
+  }
+
+  api._head = function (offset, limit, cb) {
+    continuable(offset, limit, false, cb);
+  };
+  api._tail = function (offset, limit, cb) {
+    continuable(offset, limit, true, cb);
   };
   api._save = function (entity, cb) {
     try {
@@ -22,14 +34,18 @@ module.exports = function (_opts) {
       return cb(e);
     }
 
-    if (entity.rev > 1) client.SET(prefix + entity.id, data, cb);
+    if (entity.rev > 1) client.SET(prefix + entity.id, data, function (err) {
+      cb(err);
+    });
     else {
       client.INCR(prefix + '_idx', function (err, idx) {
         if (err) return cb(err);
         client.MULTI()
           .SET(prefix + entity.id, data)
           .ZADD(prefix, idx, entity.id)
-          .EXEC(cb);
+          .EXEC(function (err) {
+            cb(err);
+          });
       });
     }
   };
