@@ -34,20 +34,23 @@ module.exports = function (_opts) {
       return cb(e);
     }
 
+    function add (idx) {
+      client.MULTI()
+        .SET(prefix + entity.id, data)
+        .ZADD(prefix, idx, entity.id)
+        .EXEC(function (err) {
+          cb(err);
+        });
+    }
+
     if (entity.rev > 1) client.SET(prefix + entity.id, data, function (err) {
       cb(err);
     });
-    else {
-      client.INCR(prefix + '_idx', function (err, idx) {
-        if (err) return cb(err);
-        client.MULTI()
-          .SET(prefix + entity.id, data)
-          .ZADD(prefix, idx, entity.id)
-          .EXEC(function (err) {
-            cb(err);
-          });
-      });
-    }
+    else if (typeof entity.__idx === 'number') add(entity.__idx);
+    else client.INCR(prefix + '_idx', function (err, idx) {
+      if (err) return cb(err);
+      add(idx);
+    });
   };
   api._load = function (id, cb) {
     client.GET(prefix + id, function (err, data) {
