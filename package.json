@@ -1,6 +1,6 @@
 {
   "name": "modeler-redis",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "redis-powered functional entity system",
   "main": "index.js",
   "dependencies": {
