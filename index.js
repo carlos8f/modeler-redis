@@ -46,7 +46,7 @@ module.exports = function (_opts) {
     if (entity.rev > 1) client.SET(prefix + entity.id, data, function (err) {
       cb(err);
     });
-    else if (typeof entity.__idx === 'number') add(entity.__idx);
+    else if (typeof entity.__idx !== 'undefined') add(entity.__idx);
     else client.INCR(prefix + '_idx', function (err, idx) {
       if (err) return cb(err);
       add(idx);
